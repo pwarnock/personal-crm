@@ -15,8 +15,8 @@ A Claude Code plugin for capturing meetups, contacts, and interactions from natu
 ### From Marketplace
 
 ```
-/plugin marketplace add pwarnock/cc-plugins
-/plugin install personal-crm@cc-plugins
+/plugin marketplace add pwarnock/pwarnock-cc-plugins
+/plugin install personal-crm@pwarnock-cc-plugins
 ```
 
 ### Direct Install
