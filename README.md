@@ -15,14 +15,14 @@ A Claude Code plugin for capturing meetups, contacts, and interactions from natu
 ### From Marketplace
 
 ```
-/plugin marketplace add pwarnock/claude-plugins
-/plugin install personal-crm@claude-plugins
+/plugin marketplace add pwarnock/cc-plugins
+/plugin install personal-crm@cc-plugins
 ```
 
 ### Direct Install
 
 ```
-/plugin install pwarnock/personal-crm
+/plugin marketplace add https://github.com/pwarnock/personal-crm.git
 ```
 
 ## Configuration
@@ -36,13 +36,11 @@ export PERSONAL_CRM_CONTACTS_DB="collection://YOUR-CONTACTS-DATABASE-ID"
 
 ### Finding Your Database IDs
 
-1. Install the [Notion plugin](https://github.com/anthropics/claude-plugins-official) for Claude Code
-2. Ask Claude to fetch your Personal CRM page:
-   ```
-   fetch https://www.notion.so/Your-Personal-CRM-Page-ID
-   ```
-3. Look for `<data-source url="collection://...">` tags in the response
-4. Copy the collection URLs for your Events and Contacts databases
+1. Install the [Notion plugin](https://github.com/makenotion/claude-code-notion-plugin) for Claude Code
+2. Connect the MCP: `/mcp` and authenticate with Notion
+3. Ask Claude to fetch your Personal CRM page using the Notion MCP
+4. Look for `<data-source url="collection://...">` tags in the response
+5. Copy the collection URLs for your Events and Contacts databases
 
 ### Expected Notion Structure
 
