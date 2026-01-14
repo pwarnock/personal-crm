@@ -1,123 +1,123 @@
 ---
-name: Personal CRM
+name: crm
 description: This skill should be used when the user mentions "met with", "had coffee with", "breakfast with", "lunch with", "dinner with", "meeting with", asks to "log event", "capture meetup", "add to CRM", "new contact", or describes an interaction with people that should be recorded. Handles natural language and voice transcripts to create structured CRM entries.
-version: 0.1.0
 ---
 
 # Personal CRM Skill
 
-Capture meetups, events, and contacts from natural language input. Process voice transcripts, quick notes, or conversational descriptions into structured Notion CRM entries.
+Capture meetups, events, and contacts from natural language input into Notion.
 
-## Prerequisites
+## Quick Start
 
-Set environment variables (see `references/schema.md` for setup):
-- `PERSONAL_CRM_EVENTS_DB` - Events database collection URL
-- `PERSONAL_CRM_CONTACTS_DB` - Contacts database collection URL
+When user describes a meetup or interaction:
 
-## Workflow Overview
-
-1. **Parse** natural language for event details and attendees
-2. **Resolve** attendee names to existing contacts
-3. **Clarify** ambiguous matches with user
-4. **Create** event with linked attendees
-5. **Optionally** create new contacts for unknown people
+1. **Parse** the input for: event type, date, attendee names, notes
+2. **Search** contacts using `mcp__plugin_Notion_notion__notion-search`
+3. **Resolve** ambiguous matches by asking user to choose
+4. **Create** event using `mcp__plugin_Notion_notion__notion-create-pages`
+5. **Confirm** what was created
 
 ## Step 1: Parse Input
 
-Extract from user's input:
+Extract from user's message:
 - **Event name**: The activity (coffee, lunch, meeting, etc.)
-- **Date**: Relative ("yesterday", "last Saturday") or explicit
-- **Attendees**: Names mentioned
-- **Notes**: Any context about what was discussed
-- **New contacts**: People not yet in CRM
+- **Date**: Convert relative dates ("yesterday", "last Saturday") to YYYY-MM-DD format
+- **Attendees**: All names mentioned
+- **Notes**: Any additional context
 
-Handle messy voice transcripts gracefully - filter filler words ("um", "uh"), extract meaningful content.
+Date conversion examples:
+- "yesterday" → subtract 1 day from today
+- "today" → today's date
+- "last Saturday" → most recent past Saturday
 
-## Step 2: Resolve Contacts
+## Step 2: Search Contacts
 
-For each attendee name:
-
-1. Search the Contacts database using `notion-search` with:
-   ```
-   query: "contact name"
-   data_source_url: $PERSONAL_CRM_CONTACTS_DB
-   ```
-
-2. Handle results:
-   - **Single match**: Use that contact
-   - **Multiple matches**: Ask user to choose (see Ambiguity Handling)
-   - **No match**: Offer to create new contact or search differently
-
-## Step 3: Handle Ambiguity
-
-When multiple contacts match a name, use AskUserQuestion:
+For EACH attendee name, search the contacts database:
 
 ```
-Question: "Which Brian?"
+Tool: mcp__plugin_Notion_notion__notion-search
+Parameters:
+  query: "<attendee name>"
+  data_source_url: $PERSONAL_CRM_CONTACTS_DB
+```
+
+The environment variable `PERSONAL_CRM_CONTACTS_DB` contains the collection URL (e.g., `collection://2776e226-b9f6-8154-abb5-000b7b90f6f7`).
+
+## Step 3: Handle Results
+
+For each search result:
+
+- **Single match**: Use that contact's page URL
+- **Multiple matches**: Ask user which one using AskUserQuestion tool
+- **No match**: Ask if user wants to create a new contact
+
+When asking about ambiguous names:
+```
+Question: "Which Brian did you meet with?"
 Options:
-- Brian Pollard
-- Brian Arizaga
-- Both
+- Brian Pollard (Acme Corp)
+- Brian Smith (TechStart)
+- Both of them
 ```
-
-Provide enough context (company, recent interaction) to help user choose quickly.
 
 ## Step 4: Create Event
 
-Use `notion-create-pages` with the Events database:
+Once all attendees are resolved, create the event:
 
 ```
-parent: {data_source_id: <ID from $PERSONAL_CRM_EVENTS_DB>}
-pages: [{
-  properties: {
-    Name: "event name",
-    "date:Event Date:start": "YYYY-MM-DD",
-    "date:Event Date:is_datetime": 0,
-    Attendees: "[\"https://notion.so/contact-id\", ...]"
-  }
-}]
+Tool: mcp__plugin_Notion_notion__notion-create-pages
+Parameters:
+  parent: {"data_source_id": "<ID from PERSONAL_CRM_EVENTS_DB without collection:// prefix>"}
+  pages: [{
+    "properties": {
+      "Name": "<event description>",
+      "date:Event Date:start": "<YYYY-MM-DD>",
+      "date:Event Date:is_datetime": 0,
+      "Attendees": "[\"https://www.notion.so/<contact-page-id>\", ...]"
+    }
+  }]
 ```
 
-Note: Extract just the UUID from the collection URL (remove `collection://` prefix).
+Extract the UUID from `$PERSONAL_CRM_EVENTS_DB` by removing the `collection://` prefix.
 
-## Step 5: Create New Contacts (Optional)
+Format Attendees as a JSON array of Notion page URLs.
 
-When user mentions someone not in CRM:
+## Step 5: Create New Contacts (if needed)
 
-1. Ask if they want to add them as a contact
-2. Extract any mentioned details (company, role)
-3. Create contact using `notion-create-pages` with Contacts database:
-   ```
-   parent: {data_source_id: <ID from $PERSONAL_CRM_CONTACTS_DB>}
-   ```
+When user confirms they want to add someone new:
 
-## Date Parsing
+```
+Tool: mcp__plugin_Notion_notion__notion-create-pages
+Parameters:
+  parent: {"data_source_id": "<ID from PERSONAL_CRM_CONTACTS_DB without collection:// prefix>"}
+  pages: [{
+    "properties": {
+      "Name": "<full name>"
+    }
+  }]
+```
 
-Convert relative dates to absolute:
-- "yesterday" → subtract 1 day from today
-- "last Saturday" → most recent past Saturday
-- "this morning" → today
-- "Tuesday" → next occurrence (or current week if not passed)
+## Step 6: Confirm
 
-## Quick Reference
-
-| Task | MCP Tool | Data Source |
-|------|----------|-------------|
-| Search contacts | `notion-search` | `$PERSONAL_CRM_CONTACTS_DB` |
-| Create event | `notion-create-pages` | `$PERSONAL_CRM_EVENTS_DB` |
-| Create contact | `notion-create-pages` | `$PERSONAL_CRM_CONTACTS_DB` |
-
-## Confirmation Pattern
-
-After creating entries, confirm with user:
-- Event created: name, date, attendee count
-- Link to Notion page
+After creating entries, tell the user:
+- Event name and date
+- Number of attendees linked
 - Any new contacts created
+- Link to the Notion page if available
 
-## Additional Resources
+## Environment Variables
 
-### Reference Files
-- **`references/schema.md`** - Configuration, database schema, MCP tool details
+Required:
+- `PERSONAL_CRM_EVENTS_DB` - Events database collection URL
+- `PERSONAL_CRM_CONTACTS_DB` - Contacts database collection URL
 
-### Examples
-- **`examples/sample-inputs.md`** - Natural language parsing examples and expected outputs
+## Examples
+
+Input: "had coffee with Alice and Bob yesterday"
+→ Parse: event="coffee", date=yesterday, attendees=["Alice", "Bob"]
+→ Search each name in contacts
+→ Create event with resolved attendees
+
+Input: "met with Brian for lunch last Friday"
+→ If multiple Brians found, ask which one
+→ Create event after user selects
