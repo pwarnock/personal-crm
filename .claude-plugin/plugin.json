@@ -1,5 +1,13 @@
 {
   "name": "personal-crm",
-  "description": "Personal CRM integration for capturing meetups, contacts, and interactions naturally",
-  "version": "0.1.0"
+  "version": "0.1.1",
+  "description": "Capture meetups, contacts, and interactions from natural language into Notion CRM",
+  "author": {
+    "name": "Peter Warnock",
+    "url": "https://github.com/pwarnock"
+  },
+  "homepage": "https://github.com/pwarnock/personal-crm",
+  "repository": "https://github.com/pwarnock/personal-crm",
+  "license": "MIT",
+  "keywords": ["notion", "crm", "contacts", "meetings", "networking", "calendar", "events"]
 }
