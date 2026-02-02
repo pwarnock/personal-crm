@@ -34,7 +34,7 @@ pages: [{
     Name: "Event title here",
     "date:Event Date:start": "YYYY-MM-DD",
     "date:Event Date:is_datetime": 0,
-    Attendees: "[\"https://www.notion.so/contact-page-id\", ...]"
+    Attendees: ["https://www.notion.so/contact-page-id-1", "https://www.notion.so/contact-page-id-2"]
   }
 }]
 ```
